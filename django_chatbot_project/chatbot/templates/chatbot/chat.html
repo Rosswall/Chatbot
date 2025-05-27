@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chatbot</title>
+  <style>
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #000;
+      --user-bubble: #dcf8c6;
+      --bot-bubble: #e6e6e6;
+    }
+
+    .dark-mode {
+      --bg-color: #121212;
+      --text-color: #f4f4f4;
+      --user-bubble: #056162;
+      --bot-bubble: #2f2f2f;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+    }
+
+    .chat-container {
+      max-width: 800px;
+      margin: 40px auto;
+      background-color: var(--bg-color);
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      border: 1px solid #ccc;
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      justify-content: flex-end;
+    }
+
+    .theme-toggle label {
+      margin-left: 10px;
+      font-size: 14px;
+    }
+
+    .chat-box {
+      padding: 20px;
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-message {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      max-width: 70%;
+    }
+
+    .user-message {
+      align-self: flex-end;
+      text-align: right;
+    }
+
+    .bot-message {
+      align-self: flex-start;
+      text-align: left;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 20px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 15px;
+    }
+
+    .user-message .bubble {
+      background-color: var(--user-bubble);
+      color: var(--text-color);
+      border-bottom-right-radius: 0;
+    }
+
+    .bot-message .bubble {
+      background-color: var(--bot-bubble);
+      color: var(--text-color);
+      border-bottom-left-radius: 0;
+    }
+
+    .timestamp {
+      font-size: 11px;
+      color: gray;
+      margin-top: 4px;
+      font-style: italic;
+      user-select: none;
+    }
+
+    .input-container {
+      display: flex;
+      border-top: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    #userInput {
+      flex-grow: 1;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container" id="app">
+    <div class="theme-toggle">
+      <input type="checkbox" id="modeSwitch" />
+      <label for="modeSwitch">Dark Mode</label>
+    </div>
+    <div id="chatBox" class="chat-box"></div>
+    <div class="input-container">
+      <input type="text" id="userInput" placeholder="Type a message..." autocomplete="off" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chatBox");
+    const userInput = document.getElementById("userInput");
+    const modeSwitch = document.getElementById("modeSwitch");
+
+    userInput.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    modeSwitch.addEventListener("change", () => {
+      const isDark = modeSwitch.checked;
+      document.body.classList.toggle("dark-mode", isDark);
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    });
+
+    function loadTheme() {
+      const savedTheme = localStorage.getItem("theme");
+      const isDark = savedTheme === "dark";
+      modeSwitch.checked = isDark;
+      document.body.classList.toggle("dark-mode", isDark);
+    }
+
+    loadTheme();
+
+    function formatMessage(text) {
+      // Replace **bold** with <b>bold</b>
+      text = text.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+      // Replace lines starting with * with - (list style)
+      text = text.replace(/^\s*\* /gm, "- ");
+      return text;
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      addMessage("You", message, "user-message");
+      userInput.value = "";
+
+      try {
+        const response = await fetch("/api/chat/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        if (data.reply) {
+          addMessage("GPT", data.reply, "bot-message");
+        } else {
+          addMessage("Error", data.error || "Unknown error", "bot-message");
+        }
+      } catch (err) {
+        addMessage("Error", err.message, "bot-message");
+      }
+    }
+
+    function addMessage(sender, text, cssClass) {
+      const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+      const messageEl = document.createElement("div");
+      messageEl.className = `chat-message ${cssClass}`;
+      messageEl.innerHTML = `
+        <div class="bubble"><strong>${sender}:</strong><br>${formatMessage(text)}</div>
+        <div class="timestamp">${timestamp}</div>
+      `;
+      chatBox.appendChild(messageEl);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat History</title>
+</head>
+<body>
+    <h1>Chat History</h1>
+    <ul>
+        {% for msg in messages %}
+        <li><b>You:</b> {{ msg.user_message }}<br><b>GPT:</b> {{ msg.bot_reply }} <i>({{ msg.timestamp }})</i></li>
+        <hr>
+        {% endfor %}
+    </ul>
+</body>
+</html>
