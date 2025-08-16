@@ -27,7 +27,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+JWT_SECRET_KEY = "zxcvbnmmmasdfghjklllqwertyuiopppppppp"  # Replace with your actual secret key
+JWT_ALGORITHM = "HS256"
+JWT_ISSUER = "YourIssuer"
+JWT_AUDIENCE = "YourAudience"  # Add this - should match your .NET API audience
 # CORS settings
 CORS_ALLOW_CREDENTIALS = True
 
@@ -84,7 +87,12 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
 AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'en-us'
@@ -96,3 +104,5 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 GEMINI_API_KEY = "AIzaSyA0Bwl3UF11esrD31FhcNpkm4NyEQvzBNo"
+
+
